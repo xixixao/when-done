@@ -8,45 +8,54 @@ var once = require('once');
 
 function noop(){}
 
-function asyncDone(fn, cb){
-  var done = once(cb);
+function asyncDoneWithSyncSupport(supportSync){
 
-  function onSuccess(result){
-    return done(null, result);
-  }
+  return function asyncDone(fn, cb){
+    var done = once(cb);
 
-  function onError(error){
-    return done(error);
-  }
-
-  var d = domain.create();
-  d.once('error', onError);
-  var domainBoundFn = d.bind(fn);
-
-  function asyncRunner(){
-    var result = domainBoundFn(done);
-
-    if(result && typeof result.on === 'function'){
-      // assume node stream
-      d.add(result);
-      eos(result, { error: false }, onSuccess);
-      return;
+    function onSuccess(result){
+      return done(null, result);
     }
 
-    if(result && typeof result.then === 'function'){
-      // assume promise
-      result.then(onSuccess, onError);
-      return;
+    function onError(error){
+      return done(error);
     }
 
-    if(result && typeof result.subscribe === 'function'){
-      // assume RxJS observable
-      result.subscribe(noop, onError, onSuccess);
-      return;
-    }
-  }
+    var d = domain.create();
+    d.once('error', onError);
+    var domainBoundFn = d.bind(fn);
 
-  tick(asyncRunner);
+    function asyncRunner(){
+      var result = domainBoundFn(done);
+
+      if(result && typeof result.on === 'function'){
+        // assume node stream
+        d.add(result);
+        eos(result, { error: false }, onSuccess);
+        return;
+      }
+
+      if(result && typeof result.then === 'function'){
+        // assume promise
+        result.then(onSuccess, onError);
+        return;
+      }
+
+      if(result && typeof result.subscribe === 'function'){
+        // assume RxJS observable
+        result.subscribe(noop, onError, onSuccess);
+        return;
+      }
+
+      if(supportSync){
+        // assume succesful sync
+        onSuccess(result);
+      }
+    }
+
+    tick(asyncRunner);
+  };
 }
 
-module.exports = asyncDone;
+module.exports = asyncDoneWithSyncSupport(false);
+module.exports.sync = asyncDoneWithSyncSupport(true);
