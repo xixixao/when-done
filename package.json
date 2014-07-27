@@ -1,7 +1,7 @@
 {
-  "name": "async-done",
-  "version": "0.2.0",
-  "description": "Manage callback, promise, and stream completion",
+  "name": "when-done",
+  "version": "0.1.0",
+  "description": "Handles completion and errors for promises, observables, streams and plain sync functions.",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -27,6 +27,7 @@
   "devDependencies": {
     "tap": "~0.4.8",
     "through2": "~0.4.1",
-    "when": "~2.8.0"
+    "when": "~2.8.0",
+    "rx": "~2.x.x"
   }
 }
